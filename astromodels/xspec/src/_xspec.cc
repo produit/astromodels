@@ -31,7 +31,7 @@ int _sherpa_init_xspec_library();
 #define ABUND_SIZE (30) // number of elements in Solar Abundance table
 
 extern "C" {
-void init_xspec();
+  //void init_xspec();
 
 // Lifted from XSPEC 12 include directory
 char* FGXSCT(void); 
@@ -1295,13 +1295,39 @@ static PyMethodDef XSpecMethods[] = {
 
 };
 
+struct module_state {
+    PyObject *error;
+};
+
+#define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
+
+static int myextension_traverse(PyObject *m, visitproc visit, void *arg) {
+    Py_VISIT(GETSTATE(m)->error);
+    return 0;
+}
+
+static int myextension_clear(PyObject *m) {
+    Py_CLEAR(GETSTATE(m)->error);
+    return 0;
+}
+
+static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "_xspec",
+        NULL,
+        sizeof(struct module_state),
+        XSpecMethods,
+        NULL,
+        myextension_traverse,
+	myextension_clear,
+        NULL
+};
 
 PyMODINIT_FUNC
 init_xspec(void)
 {
-
   import_array();
-  Py_InitModule( (char*)"_xspec", XSpecMethods );
-
+  PyObject *module = PyModule_Create(&moduledef);
+  return module;
 }
 
